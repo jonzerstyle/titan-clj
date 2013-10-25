@@ -48,3 +48,30 @@
   [^TitanGraph g class]
   (if-let [types (.getTypes g class)]
     (seq types)))
+
+(t/ann get-name [TitanType -> String])
+(t/non-nil-return com.thinkaurelius.titan.core.TitanType/getName :all)
+(defn get-name
+  [^TitanType titan-type]
+  (.getName titan-type))
+
+(t/ann get-data-type [TitanKey -> Class])
+(t/non-nil-return com.thinkaurelius.titan.core.TitanKey/getDataType :all)
+(defn get-data-type
+  [^TitanKey titan-key]
+  (.getDataType titan-key))
+
+(t/ann modifiable? [TitanType -> boolean])
+(defn modifiable?
+  [^TitanType titan-type]
+  (.isModifiable titan-type))
+
+(t/ann is-edge-label? [TitanType -> boolean])
+(defn is-edge-label? 
+  [^TitanType titan-type]
+  (.isEdgeLabel titan-type))
+
+(t/ann is-property-key? [TitanType -> boolean])
+(defn is-property-key?
+  [^TitanType titan-type]
+  (.isPropertyKey titan-type))

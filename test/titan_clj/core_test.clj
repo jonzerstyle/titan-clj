@@ -16,6 +16,10 @@
   []
   (FileUtils/deleteDirectory (io/as-file titan-tmp-dir)))
 
+(defn- clean-test-env
+  []
+  (FileUtils/deleteDirectory (io/as-file titan-tmp-dir)))
+
 (def conf {:storage.backend :berkeleyje :storage.directory titan-tmp-dir})
 
 (deftest test-connect!
@@ -23,7 +27,8 @@
   (testing "Opening connection"
     (let [g (connect! conf)]
       (is (.isOpen g))
-      (shutdown! g))))
+      (shutdown! g)))
+  (clean-test-env))
 
 (deftest test-keys
   (init-test-env)
@@ -31,5 +36,11 @@
     (testing "Creating keys"
       (make-key! g {:name "SomeKey" :data-type String})
       (let [types (get-types g com.thinkaurelius.titan.core.TitanType)]
-        (is (= 1 (count types))))))
-
+        (is (= 1 (count types)))
+        (let [type (first types)]
+          (is (= "SomeKey" (get-name type)))
+          (is (is-property-key? type))
+          (is (not (is-edge-label? type)))
+          (is (= String (get-data-type type)))
+    (shutdown! g)))))
+  (clean-test-env))
