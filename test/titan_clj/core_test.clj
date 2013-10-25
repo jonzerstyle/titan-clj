@@ -41,6 +41,8 @@
           (is (= "SomeKey" (get-name type)))
           (is (is-property-key? type))
           (is (not (is-edge-label? type)))
-          (is (= String (get-data-type type)))
-    (shutdown! g)))))
+          (is (= String (get-data-type type)))))
+      (let [key (make-key! g {:name "Locking Unique Key" :data-type String :unique :lock})]
+        (is (.isUnique key com.tinkerpop.blueprints.Direction/IN)))
+    (shutdown! g)))
   (clean-test-env))

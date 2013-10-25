@@ -1,6 +1,14 @@
 (ns titan-clj.core
   (:require [clojure.core.typed :as t])
-  (:import [com.thinkaurelius.titan.core TitanFactory TitanGraph TitanKey TitanType]
+  (:import [com.tinkerpop.blueprints Element]
+           [com.thinkaurelius.titan.core
+            KeyMaker
+            TitanFactory
+            TitanGraph
+            TitanKey
+            TitanType
+            TypeMaker
+            TypeMaker$UniquenessConsistency]
            [org.apache.commons.configuration Configuration BaseConfiguration]))
 
 (t/def-alias Connection-Map (HMap :mandatory {:storage.backend String}
@@ -30,17 +38,50 @@
   [^TitanGraph g]
   (.shutdown g))
 
-(t/ann make-key! [TitanGraph '{:name String :data-type Class} -> TitanKey])
+(t/ann indexed (Fn [KeyMaker Class -> KeyMaker]
+                   [KeyMaker String Class -> KeyMaker]))
+(t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/indexed :all)
+(defn indexed
+  ([^KeyMaker key-maker element] (.indexed key-maker element))
+  ([^KeyMaker key-maker name element] (.indexed key-maker name element)))
+
+(t/def-alias Key-Map
+  (HMap :mandatory {:name String :data-type Class}
+        ;:optional {:unique (U (Value :lock) (Value(:no-lock)))}))
+        :optional {:unique (U (Value :lock) (Value :no-lock))}))
+
+
+(defmacro if-not-nil 
+  [obj func & args]
+  (if (not-any? nil? args)
+     `(~func ~obj ~@args)
+     `(identity ~obj)))
+
+(t/ann unique-converter [(U nil (Value :lock) (Value :no-lock)) -> (U nil TypeMaker$UniquenessConsistency)])
+(defn- unique-converter
+  "Takes :lock and :no-lock and converts to appropriate type"
+  [locker]
+  (case locker
+    :lock (TypeMaker$UniquenessConsistency/LOCK)
+    :no-lock (TypeMaker$UniquenessConsistency/NO_LOCK)
+    nil nil
+    (throw (IllegalArgumentException. (str "Unsupported unique type: " locker)))))
+
+; TODO - need to figure out what's wrong with type checking and the c-a macro
+; TODO - add check for unique + indexed and throw error otherwise?
+(t/ann ^:no-check make-key! [TitanGraph Key-Map -> TitanKey])
 (t/non-nil-return com.thinkaurelius.titan.core.TitanGraph/makeKey :all)
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/make :all)
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/dataType :all)
+(t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/unique :all)
 (defn make-key!
   "Creates a TitanKey"
-  [^TitanGraph g {:keys [name data-type]}]
-  (let [maker (.makeKey g name)]
-    (-> maker
-        (.dataType data-type)
-        .make)))
+  [^TitanGraph g {:keys [name data-type standard-index unique]}]
+  (let [^KeyMaker maker (-> (.makeKey g name)
+                            (.dataType data-type)
+                            (if-not-nil .indexed com.tinkerpop.blueprints.Vertex)
+                            (if-not-nil .unique (unique-converter unique)))]
+    (.make maker)))
 
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
 (defn get-types
