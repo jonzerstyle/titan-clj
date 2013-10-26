@@ -1,6 +1,6 @@
 (ns titan-clj.core
   (:require [clojure.core.typed :as t])
-  (:import [com.tinkerpop.blueprints Element]
+  (:import [com.tinkerpop.blueprints Direction Element]
            [com.thinkaurelius.titan.core
             KeyMaker
             TitanFactory
@@ -48,7 +48,8 @@
 (t/def-alias Key-Map
   (HMap :mandatory {:name String :data-type Class}
         ;:optional {:unique (U (Value :lock) (Value(:no-lock)))}))
-        :optional {:unique (U (Value :lock) (Value :no-lock))}))
+        :optional {:unique (U (Value :lock) (Value :no-lock))
+                   :single (U (Value :lock) (Value :no-lock))}))
 
 
 (defmacro if-not-nil 
@@ -76,11 +77,12 @@
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/unique :all)
 (defn make-key!
   "Creates a TitanKey"
-  [^TitanGraph g {:keys [name data-type standard-index unique]}]
+  [^TitanGraph g {:keys [name data-type standard-index unique single]}]
   (let [^KeyMaker maker (-> (.makeKey g name)
                             (.dataType data-type)
                             (if-not-nil .indexed com.tinkerpop.blueprints.Vertex)
-                            (if-not-nil .unique (unique-converter unique)))]
+                            (if-not-nil .unique (unique-converter unique))
+                            (if-not-nil .single (unique-converter single)))]
     (.make maker)))
 
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
@@ -107,12 +109,27 @@
   [^TitanType titan-type]
   (.isModifiable titan-type))
 
-(t/ann is-edge-label? [TitanType -> boolean])
-(defn is-edge-label? 
+(t/ann edge-label? [TitanType -> boolean])
+(defn edge-label? 
   [^TitanType titan-type]
   (.isEdgeLabel titan-type))
 
-(t/ann is-property-key? [TitanType -> boolean])
-(defn is-property-key?
+(t/ann property-key? [TitanType -> boolean])
+(defn property-key?
   [^TitanType titan-type]
   (.isPropertyKey titan-type))
+
+(t/ann unique? [TitanType (U (Value :in) (Value :out) (Value :both)) -> boolean])
+(defn unique?
+  [^TitanType titan-type direction]
+  (.isUnique titan-type (direction-converter direction)))
+
+(t/ann direction-converter [(U nil (Value :in) (Value :out) (Value :both)) ->  Direction])
+(defn- direction-converter
+  "Takes :in, :out, :both and converts to Direction"
+  [dir]
+  (case dir
+    :in (Direction/IN)
+    :out (Direction/OUT)
+    :both (Direction/BOTH)
+    (throw (IllegalArgumentException. (str "Unsupported direction: " dir)))))

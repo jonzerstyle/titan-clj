@@ -44,5 +44,7 @@
           (is (= String (get-data-type type)))))
       (let [key (make-key! g {:name "Locking Unique Key" :data-type String :unique :lock})]
         (is (.isUnique key com.tinkerpop.blueprints.Direction/IN)))
+      (let [key (make-key! g {:name "Locking Single Key" :data-type String :single :lock})]
+        (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT)))
     (shutdown! g)))
   (clean-test-env))
