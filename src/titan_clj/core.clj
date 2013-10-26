@@ -49,24 +49,26 @@
   (HMap :mandatory {:name String :data-type Class}
         ;:optional {:unique (U (Value :lock) (Value(:no-lock)))}))
         :optional {:unique (U (Value :lock) (Value :no-lock))
-                   :single (U (Value :lock) (Value :no-lock))}))
+                   :single (U (Value :lock) (Value :no-lock))
+                   :list boolean
+                   :indexed-standard Class
+                   :indexed '[String Class]}))
 
 
-(defmacro if-not-nil 
-  [obj func & args]
-  (if (not-any? nil? args)
-     `(~func ~obj ~@args)
-     `(identity ~obj)))
+(defmacro if-run 
+  [obj condition func & args] ;obj always needs to be first since this fn is used with ->
+  `(if ~condition
+     (~func ~obj ~@args)
+     (identity ~obj)))
 
-(t/ann unique-converter [(U nil (Value :lock) (Value :no-lock)) -> (U nil TypeMaker$UniquenessConsistency)])
+(t/ann unique-converter [(U (Value :lock) (Value :no-lock)) -> (U TypeMaker$UniquenessConsistency)])
 (defn- unique-converter
   "Takes :lock and :no-lock and converts to appropriate type"
-  [locker]
-  (case locker
+  [lock-type]
+  (case lock-type
     :lock (TypeMaker$UniquenessConsistency/LOCK)
     :no-lock (TypeMaker$UniquenessConsistency/NO_LOCK)
-    nil nil
-    (throw (IllegalArgumentException. (str "Unsupported unique type: " locker)))))
+    (throw (IllegalArgumentException. (str "Unsupported unique type: " lock-type)))))
 
 ; TODO - need to figure out what's wrong with type checking and the c-a macro
 ; TODO - add check for unique + indexed and throw error otherwise?
@@ -77,12 +79,13 @@
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/unique :all)
 (defn make-key!
   "Creates a TitanKey"
-  [^TitanGraph g {:keys [name data-type standard-index unique single]}]
+  [^TitanGraph g {:keys [name data-type indexed-standard indexed unique single]}]
   (let [^KeyMaker maker (-> (.makeKey g name)
                             (.dataType data-type)
-                            (if-not-nil .indexed com.tinkerpop.blueprints.Vertex)
-                            (if-not-nil .unique (unique-converter unique))
-                            (if-not-nil .single (unique-converter single)))]
+                            (if-run indexed-standard .indexed indexed-standard)
+                            (if-run indexed .indexed (first indexed) (second indexed))
+                            (if-run unique .unique (unique-converter unique))
+                            (if-run single .single (unique-converter single)))]
     (.make maker)))
 
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
@@ -119,11 +122,6 @@
   [^TitanType titan-type]
   (.isPropertyKey titan-type))
 
-(t/ann unique? [TitanType (U (Value :in) (Value :out) (Value :both)) -> boolean])
-(defn unique?
-  [^TitanType titan-type direction]
-  (.isUnique titan-type (direction-converter direction)))
-
 (t/ann direction-converter [(U nil (Value :in) (Value :out) (Value :both)) ->  Direction])
 (defn- direction-converter
   "Takes :in, :out, :both and converts to Direction"
@@ -133,3 +131,8 @@
     :out (Direction/OUT)
     :both (Direction/BOTH)
     (throw (IllegalArgumentException. (str "Unsupported direction: " dir)))))
+
+(t/ann unique? [TitanType (U (Value :in) (Value :out) (Value :both)) -> boolean])
+(defn unique?
+  [^TitanType titan-type direction]
+  (.isUnique titan-type (direction-converter direction)))

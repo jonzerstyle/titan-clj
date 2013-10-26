@@ -4,7 +4,8 @@
             
             [clojure.java.io :as io]
             [clojure.core.typed :as t])
-  (:import [org.apache.commons.io FileUtils]))
+  (:import [org.apache.commons.io FileUtils]
+           [com.tinkerpop.blueprints Vertex Edge]))
 
 (deftest type-check
   (testing "Checking typing"
@@ -20,7 +21,12 @@
   []
   (FileUtils/deleteDirectory (io/as-file titan-tmp-dir)))
 
-(def conf {:storage.backend :berkeleyje :storage.directory titan-tmp-dir})
+(def conf {:storage.backend :berkeleyje
+           :storage.directory titan-tmp-dir
+           :storage.index.search.backend :elasticsearch
+           :storage.index.search.directory (str titan-tmp-dir "/searchindex")
+           :storage.index.search.client-only "false"
+           :storage.index.search.local-mode "true"})
 
 (deftest test-connect!
   (init-test-env)
@@ -39,12 +45,16 @@
         (is (= 1 (count types)))
         (let [type (first types)]
           (is (= "SomeKey" (get-name type)))
-          (is (is-property-key? type))
-          (is (not (is-edge-label? type)))
+          (is (property-key? type))
+          (is (not (edge-label? type)))
           (is (= String (get-data-type type)))))
-      (let [key (make-key! g {:name "Locking Unique Key" :data-type String :unique :lock})]
+      (let [key (make-key! g {:name "Locking Unique Key" :data-type String :unique :lock :indexed-standard Vertex})]
         (is (.isUnique key com.tinkerpop.blueprints.Direction/IN)))
-      (let [key (make-key! g {:name "Locking Single Key" :data-type String :single :lock})]
-        (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT)))
+      (let [key (make-key! g {:name "Locking Single Key" :data-type String :single :lock :indexed-standard Vertex})]
+        (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
+        (is (.hasIndex key "standard" Vertex)))
+      (let [key (make-key! g {:name "Locking Single Key Some Index" :data-type String :single :lock :indexed ["search" Vertex]})]
+        (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
+        (is (.hasIndex key "search" Vertex)))
     (shutdown! g)))
   (clean-test-env))
