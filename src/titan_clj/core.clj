@@ -13,8 +13,12 @@
             TypeMaker$UniquenessConsistency]
            [org.apache.commons.configuration Configuration BaseConfiguration]))
 
-(t/def-alias Connection-Map (HMap :mandatory {:storage.backend String}
-                                  :optional  {:storage.directory String}))
+;;; Util stuff
+(defmacro if-run 
+  [obj condition func & args] ;obj always needs to be first since this fn is used with ->
+  `(if ~condition
+     (~func ~obj ~@args)
+     (identity ~obj)))
 
 (t/ann ^:no-check map-to-conf [Connection-Map -> Configuration])
 (defn map-to-conf
@@ -25,6 +29,29 @@
       (.addProperty conf (name k) (name v)))
     conf))
 
+(t/ann unique-converter [(U (Value :lock) (Value :no-lock)) -> (U TypeMaker$UniquenessConsistency)])
+(defn- unique-converter
+  "Takes :lock and :no-lock and converts to appropriate type"
+  [lock-type]
+  (case lock-type
+    :lock (TypeMaker$UniquenessConsistency/LOCK)
+    :no-lock (TypeMaker$UniquenessConsistency/NO_LOCK)
+    (throw (IllegalArgumentException. (str "Unsupported unique type: " lock-type)))))
+
+(t/ann direction-converter [(U nil (Value :in) (Value :out) (Value :both)) ->  Direction])
+(defn- direction-converter
+  "Takes :in, :out, :both and converts to Direction"
+  [dir]
+  (case dir
+    :in (Direction/IN)
+    :out (Direction/OUT)
+    :both (Direction/BOTH)
+    (throw (IllegalArgumentException. (str "Unsupported direction: " dir)))))
+
+;;; TitanGraph
+
+(t/def-alias Connection-Map (HMap :mandatory {:storage.backend String}
+                                  :optional  {:storage.directory String}))
 (t/ann connect! [Connection-Map -> TitanGraph])
 (defn connect!
   "Connects to a TitanGraph"
@@ -40,28 +67,7 @@
   [^TitanGraph g]
   (.shutdown g))
 
-(t/ann indexed (Fn [KeyMaker Class -> KeyMaker]
-                   [KeyMaker String Class -> KeyMaker]))
-(t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/indexed :all)
-(defn indexed
-  ([^KeyMaker key-maker element] (.indexed key-maker element))
-  ([^KeyMaker key-maker name element] (.indexed key-maker name element)))
-
-
-(defmacro if-run 
-  [obj condition func & args] ;obj always needs to be first since this fn is used with ->
-  `(if ~condition
-     (~func ~obj ~@args)
-     (identity ~obj)))
-
-(t/ann unique-converter [(U (Value :lock) (Value :no-lock)) -> (U TypeMaker$UniquenessConsistency)])
-(defn- unique-converter
-  "Takes :lock and :no-lock and converts to appropriate type"
-  [lock-type]
-  (case lock-type
-    :lock (TypeMaker$UniquenessConsistency/LOCK)
-    :no-lock (TypeMaker$UniquenessConsistency/NO_LOCK)
-    (throw (IllegalArgumentException. (str "Unsupported unique type: " lock-type)))))
+;;; TitanKey
 
 ; TODO - need to figure out what's wrong with type checking and the c-a macro
 ; TODO - add check for unique + indexed and throw error otherwise?
@@ -90,6 +96,7 @@
                             (if-run list .list))]
     (.make maker)))
 
+;;; TitanLabel
 ; TODO - not sure how to best type check make-label!
 (t/def-alias Label-Map
   (HMap :mandatory {:name String}
@@ -119,7 +126,18 @@
                               (if-run (= edge-type :directed) .directed)
                               (if-run (= edge-type :unidirected) .unidirected))]
     (.make maker)))
-                              
+
+(t/ann directed? [TitanLabel -> boolean])
+(defn directed?
+  [^TitanLabel label]
+  (.isDirected label))
+
+(t/ann unidirected? [TitanLabel -> boolean])
+(defn unidirected?
+  [^TitanLabel label]
+  (.isUnidirected label))
+
+;;; TitanType
 
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
 (defn get-types
@@ -155,27 +173,7 @@
   [^TitanType titan-type]
   (.isPropertyKey titan-type))
 
-(t/ann direction-converter [(U nil (Value :in) (Value :out) (Value :both)) ->  Direction])
-(defn- direction-converter
-  "Takes :in, :out, :both and converts to Direction"
-  [dir]
-  (case dir
-    :in (Direction/IN)
-    :out (Direction/OUT)
-    :both (Direction/BOTH)
-    (throw (IllegalArgumentException. (str "Unsupported direction: " dir)))))
-
 (t/ann unique? [TitanType (U (Value :in) (Value :out) (Value :both)) -> boolean])
 (defn unique?
   [^TitanType titan-type direction]
   (.isUnique titan-type (direction-converter direction)))
-
-(t/ann directed? [TitanLabel -> boolean])
-(defn directed?
-  [^TitanLabel label]
-  (.isDirected label))
-
-(t/ann unidirected? [TitanLabel -> boolean])
-(defn unidirected?
-  [^TitanLabel label]
-  (.isUnidirected label))
