@@ -79,13 +79,14 @@
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/unique :all)
 (defn make-key!
   "Creates a TitanKey"
-  [^TitanGraph g {:keys [name data-type indexed-standard indexed unique single]}]
+  [^TitanGraph g {:keys [name data-type indexed-standard indexed unique single list]}]
   (let [^KeyMaker maker (-> (.makeKey g name)
                             (.dataType data-type)
                             (if-run indexed-standard .indexed indexed-standard)
                             (if-run indexed .indexed (first indexed) (second indexed))
                             (if-run unique .unique (unique-converter unique))
-                            (if-run single .single (unique-converter single)))]
+                            (if-run single .single (unique-converter single))
+                            (if-run list .list))]
     (.make maker)))
 
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])

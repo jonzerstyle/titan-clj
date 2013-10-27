@@ -21,6 +21,14 @@
   []
   (FileUtils/deleteDirectory (io/as-file titan-tmp-dir)))
 
+(defn- fixture
+  [f]
+  (init-test-env)
+  (f)
+  (clean-test-env))
+
+(use-fixtures :each fixture)
+
 (def conf {:storage.backend :berkeleyje
            :storage.directory titan-tmp-dir
            :storage.index.search.backend :elasticsearch
@@ -56,5 +64,11 @@
       (let [key (make-key! g {:name "Locking Single Key Some Index" :data-type String :single :lock :indexed ["search" Vertex]})]
         (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
         (is (.hasIndex key "search" Vertex)))
+      (let [key (make-key! g {:name "Locking Single Key List" :data-type String :list true})]
+        ; TODO - not sure if there is a way to test this...
+        )
+      (is (thrown-with-msg? RuntimeException
+                            #"Unsupported unique type: :locky"
+                            (make-key! g {:name "test exception" :data-type String :unique :locky})))
     (shutdown! g)))
   (clean-test-env))
