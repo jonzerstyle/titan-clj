@@ -3,9 +3,11 @@
   (:import [com.tinkerpop.blueprints Direction Element]
            [com.thinkaurelius.titan.core
             KeyMaker
+            LabelMaker
             TitanFactory
             TitanGraph
             TitanKey
+            TitanLabel
             TitanType
             TypeMaker
             TypeMaker$UniquenessConsistency]
@@ -45,15 +47,6 @@
   ([^KeyMaker key-maker element] (.indexed key-maker element))
   ([^KeyMaker key-maker name element] (.indexed key-maker name element)))
 
-(t/def-alias Key-Map
-  (HMap :mandatory {:name String :data-type Class}
-        ;:optional {:unique (U (Value :lock) (Value(:no-lock)))}))
-        :optional {:unique (U (Value :lock) (Value :no-lock))
-                   :single (U (Value :lock) (Value :no-lock))
-                   :list boolean
-                   :indexed-standard Class
-                   :indexed '[String Class]}))
-
 
 (defmacro if-run 
   [obj condition func & args] ;obj always needs to be first since this fn is used with ->
@@ -72,6 +65,14 @@
 
 ; TODO - need to figure out what's wrong with type checking and the c-a macro
 ; TODO - add check for unique + indexed and throw error otherwise?
+(t/def-alias Key-Map
+  (HMap :mandatory {:name String :data-type Class}
+        ;:optional {:unique (U (Value :lock) (Value(:no-lock)))}))
+        :optional {:unique (U (Value :lock) (Value :no-lock))
+                   :single (U (Value :lock) (Value :no-lock))
+                   :list boolean
+                   :indexed-standard Class
+                   :indexed '[String Class]}))
 (t/ann ^:no-check make-key! [TitanGraph Key-Map -> TitanKey])
 (t/non-nil-return com.thinkaurelius.titan.core.TitanGraph/makeKey :all)
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/make :all)
@@ -88,6 +89,37 @@
                             (if-run single .single (unique-converter single))
                             (if-run list .list))]
     (.make maker)))
+
+; TODO - not sure how to best type check make-label!
+(t/def-alias Label-Map
+  (HMap :mandatory {:name String}
+        ;:optional {:unique (U (Value :lock) (Value(:no-lock)))}))
+        :optional {:many-to-one (U (Value :lock) (Value :no-lock))
+                   :one-to-many (U (Value :lock) (Value :no-lock))
+                   :one-to-one (U (Value :lock) (Value :no-lock))
+                   :signature '[TitanType]
+                   :sort-key '[TitanType]
+                   :edge-type (U (Value :directed) (Value :unidirected))}))
+(t/ann ^:no-check make-label! [TitanGraph Label-Map -> TitanLabel])
+(t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/manyToMany :all)
+(t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/manyToOne :all)
+(t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/oneToMany :all)
+(t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/oneToOne :all)
+(t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/signature :all)
+(t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/sortKey :all)
+(defn make-label!
+  [^TitanGraph g {:keys [name edge-type many-to-many many-to-one one-to-many one-to-one signature sort-key]}]
+  (let [^LabelMaker maker (-> (.makeLabel g name)
+                              (if-run many-to-many .manyToMany)
+                              (if-run many-to-one .manyToOne (unique-converter many-to-one))
+                              (if-run one-to-many .manyToOne (unique-converter one-to-many))
+                              (if-run one-to-one .manyToOne (unique-converter one-to-one))
+                              (if-run (and signature (not-empty signature)) .signature (into-array signature))
+                              (if-run (and sort-key (not-empty sort-key)) .sortKey ((into-array sort-key)))
+                              (if-run (= edge-type :directed) .directed)
+                              (if-run (= edge-type :unidirected) .unidirected))]
+    (.make maker)))
+                              
 
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
 (defn get-types
@@ -137,3 +169,13 @@
 (defn unique?
   [^TitanType titan-type direction]
   (.isUnique titan-type (direction-converter direction)))
+
+(t/ann directed? [TitanLabel -> boolean])
+(defn directed?
+  [^TitanLabel label]
+  (.isDirected label))
+
+(t/ann unidirected? [TitanLabel -> boolean])
+(defn unidirected?
+  [^TitanLabel label]
+  (.isUnidirected label))
