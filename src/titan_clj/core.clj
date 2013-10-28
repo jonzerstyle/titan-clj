@@ -4,11 +4,13 @@
            [com.thinkaurelius.titan.core
             KeyMaker
             LabelMaker
+            TitanEdge
             TitanFactory
             TitanGraph
             TitanKey
             TitanLabel
             TitanType
+            TitanVertex
             TypeMaker
             TypeMaker$UniquenessConsistency]
            [org.apache.commons.configuration Configuration BaseConfiguration]))
@@ -177,3 +179,25 @@
 (defn unique?
   [^TitanType titan-type direction]
   (.isUnique titan-type (direction-converter direction)))
+
+;;; TitanVertex
+
+(t/ann add-property! [TitanVertex String Object -> TitanVertex])
+(defn add-property!
+  [^TitanVertex v ^String name value]
+  (.addProperty v name value)
+  v)
+
+; TODO - need to figure out how to type check addVertex since we pass null but
+; core.typed expects Object
+(t/def-alias Vertex-Map
+  (HMap :mandatory {:name String
+                    :properties (t/Map t/Keyword Object)}
+        :optional {}))
+(t/ann ^:no-check new-vertex! [TitanGraph Vertex-Map -> TitanVertex])
+(defn new-vertex!
+  [^TitanGraph g {:keys [name properties]}]
+  (let [^TitanVertex v (.addVertex g nil)]
+    (doseq [prop properties]
+      (add-property! v (clojure.core/name (first prop)) (second prop)))
+    v))

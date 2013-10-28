@@ -92,3 +92,9 @@
       (is (unidirected? label)))
     (let [label (make-label! g {:name "l3" :edge-type :directed})]
       (is (directed? label)))))
+
+(deftest test-vertex
+  (testing "Creating vertex"
+    (new-vertex! g {:name "vertexname" :properties {:some-key "something unique"}}))
+    (let [vertices (seq (.getVertices g))]
+      (is (= 1 (count vertices)))))
