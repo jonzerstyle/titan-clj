@@ -241,4 +241,5 @@
   ([^TitanVertex v]
    (seq (.getEdges v)))
   ([^TitanVertex v direction ^String label & labels]
-   (seq (.getEdges v (direction-converter direction) (into-array String (concat '(label) labels))))))
+   (let [label-array  (into-array String (concat (list label) labels))]
+     (seq (.getEdges v (direction-converter direction) label-array)))))

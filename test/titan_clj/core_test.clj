@@ -115,6 +115,16 @@
           vertices (seq (.getVertices g))]
       (is (= 2 (count vertices)))
       (let [v1 (first vertices)
-            v2 (second vertices)]
+            v2 (second vertices)
+            v1-edges (get-edges v1 :in "connecting-edge")
+            not-v1-edges (get-edges v1 :out "connecting-edge")
+            v2-edges (get-edges v2 :out "connecting-edge")
+            not-v2-edges (get-edges v2 :in "connecting-edge")]
         (is (= 1 (get-edge-count v1)))
-        (is (= 1 (get-edge-count v2)))))))
+        (is (= 1 (get-edge-count v2)))
+        (is (= "dest" (.getValue (first (get-properties v1 :name)))))
+        (is (= 1 (count v1-edges)))
+        (is (= 0 (count not-v1-edges)))
+        (is (= "source" (.getValue (first (get-properties v2 :name)))))
+        (is (= 1 (count v2-edges)))
+        (is (= 0 (count not-v2-edges)))))))
