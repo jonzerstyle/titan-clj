@@ -95,7 +95,8 @@
 
 (deftest test-vertex
   (testing "Creating vertex"
-    (new-vertex! g {:name "vertexname" :some-key "something unique" :key2 2})
+    (let [v (new-vertex! g {:name "vertexname" :some-key "something unique" :key2 2})]
+
     (let [vertices (seq (.getVertices g))]
       (is (= 1 (count vertices)))
       (let [v (first vertices)]
@@ -104,4 +105,16 @@
           (is false))
         (if-let [props (get-properties v :key2)]
           (is (= 2 (.getValue (first props))))
-          (is false))))))
+          (is false)))))))
+
+(deftest test-edge
+  (testing "Creating edges"
+    (let [source (new-vertex! g {:name "source"})
+          dest (new-vertex! g {:name "dest"})
+          edge (add-edge! source dest "connecting-edge")
+          vertices (seq (.getVertices g))]
+      (is (= 2 (count vertices)))
+      (let [v1 (first vertices)
+            v2 (second vertices)]
+        (is (= 1 (get-edge-count v1)))
+        (is (= 1 (get-edge-count v2)))))))

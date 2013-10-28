@@ -1,6 +1,6 @@
 (ns titan-clj.core
   (:require [clojure.core.typed :as t])
-  (:import [com.tinkerpop.blueprints Direction Element]
+  (:import [com.tinkerpop.blueprints Direction Edge Element Vertex]
            [com.thinkaurelius.titan.core
             KeyMaker
             LabelMaker
@@ -30,7 +30,7 @@
   [params]
   (let [conf (BaseConfiguration.)]
     (doseq [[k v] params]
-      (.addProperty conf (name k) (name v)))
+      (.addProperty conf (clojure.core/name k) (clojure.core/name v)))
     conf))
 
 (t/ann unique-converter [(U (Value :lock) (Value :no-lock)) -> (U TypeMaker$UniquenessConsistency)])
@@ -42,7 +42,7 @@
     :no-lock (TypeMaker$UniquenessConsistency/NO_LOCK)
     (throw (IllegalArgumentException. (str "Unsupported unique type: " lock-type)))))
 
-(t/ann direction-converter [(U nil (Value :in) (Value :out) (Value :both)) ->  Direction])
+(t/ann direction-converter [(U (Value :in) (Value :out) (Value :both)) ->  Direction])
 (defn- direction-converter
   "Takes :in, :out, :both and converts to Direction"
   [dir]
@@ -177,7 +177,9 @@
   [^TitanType titan-type]
   (.isPropertyKey titan-type))
 
-(t/ann unique? [TitanType (U (Value :in) (Value :out) (Value :both)) -> boolean])
+(t/def-alias Direction-Keywords (U (Value :in) (Value :out) (Value :both)))
+
+(t/ann unique? [TitanType Direction-Keywords -> boolean])
 (defn unique?
   [^TitanType titan-type direction]
   (.isUnique titan-type (direction-converter direction)))
@@ -209,3 +211,34 @@
     (doseq [prop properties]
       (add-property! v (clojure.core/name (first prop)) (second prop)))
     v))
+
+;;; TitanEdge
+
+; TODO - need to figure out how to type check since we pass null
+(t/ann  ^:no-check add-edge!
+  (Fn [TitanVertex TitanVertex String -> TitanEdge]
+      [TitanGraph TitanVertex TitanVertex String -> TitanEdge]))
+(t/non-nil-return com.thinkaurelius.titan.core.TitanVertex/addEdge :all)
+(defn add-edge!
+  ([^TitanVertex source ^TitanVertex dest ^String label]
+   (let [edge (.addEdge source label dest)]
+     edge))
+  ([^TitanGraph g ^TitanVertex source ^TitanVertex dest ^String label]
+   (let [edge (.addEdge g nil source dest label)]
+     edge)))
+
+(t/ann get-edge-count [TitanVertex -> Long])
+(defn get-edge-count
+  [^TitanVertex v]
+  (.getEdgeCount v))
+
+; TODO - no-checking because into-array requires array support
+(t/ann ^:no-check get-edges
+  (Fn [TitanVertex -> (t/Option (t/NonEmptySeq Any))]
+      [TitanVertex Direction-Keywords String String * -> (t/Option (t/NonEmptySeq Any))]))
+(t/non-nil-return com.thinkaurelius.titan.core.TitanVertex/getEdges :all)
+(defn get-edges
+  ([^TitanVertex v]
+   (seq (.getEdges v)))
+  ([^TitanVertex v direction ^String label & labels]
+   (seq (.getEdges v (direction-converter direction) (into-array String (concat '(label) labels))))))
