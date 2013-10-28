@@ -95,6 +95,13 @@
 
 (deftest test-vertex
   (testing "Creating vertex"
-    (new-vertex! g {:name "vertexname" :properties {:some-key "something unique"}}))
+    (new-vertex! g {:name "vertexname" :some-key "something unique" :key2 2})
     (let [vertices (seq (.getVertices g))]
-      (is (= 1 (count vertices)))))
+      (is (= 1 (count vertices)))
+      (let [v (first vertices)]
+        (if-let [props (get-properties v :some-key)]
+          (is (= "something unique" (.getValue (first props))))
+          (is false))
+        (if-let [props (get-properties v :key2)]
+          (is (= 2 (.getValue (first props))))
+          (is false))))))

@@ -9,11 +9,13 @@
             TitanGraph
             TitanKey
             TitanLabel
+            TitanProperty
             TitanType
             TitanVertex
             TypeMaker
             TypeMaker$UniquenessConsistency]
-           [org.apache.commons.configuration Configuration BaseConfiguration]))
+           [org.apache.commons.configuration Configuration BaseConfiguration])
+  (:refer-clojure :exclude [name]))
 
 ;;; Util stuff
 (defmacro if-run 
@@ -188,15 +190,21 @@
   (.addProperty v name value)
   v)
 
+; TODO - improve type check when I can figure how to specify something like
+; generics
+(t/ann get-properties [TitanVertex t/Keyword -> (t/Option (t/NonEmptySeq Any))])
+(t/non-nil-return com.thinkaurelius.titan.core.TitanVertex/getProperties :all)
+(defn get-properties
+  [^TitanVertex v name]
+  (if-let [props (.getProperties v (clojure.core/name name))]
+    (seq props)))
+
 ; TODO - need to figure out how to type check addVertex since we pass null but
 ; core.typed expects Object
-(t/def-alias Vertex-Map
-  (HMap :mandatory {:name String
-                    :properties (t/Map t/Keyword Object)}
-        :optional {}))
+(t/def-alias Vertex-Map (t/Map t/Keyword Object))
 (t/ann ^:no-check new-vertex! [TitanGraph Vertex-Map -> TitanVertex])
 (defn new-vertex!
-  [^TitanGraph g {:keys [name properties]}]
+  [^TitanGraph g properties]
   (let [^TitanVertex v (.addVertex g nil)]
     (doseq [prop properties]
       (add-property! v (clojure.core/name (first prop)) (second prop)))
