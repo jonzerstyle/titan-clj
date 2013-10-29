@@ -50,6 +50,12 @@
   (testing "Opening connection"
     (is (.isOpen g))))
 
+(deftest test-general-types
+  (testing "Testing types"
+    (is (not (get-type g "Something")))
+    (make-key! g {:name "Something" :data-type String})
+    (is (get-type g "Something"))))
+
 (deftest test-keys
   (testing "Creating keys"
     (make-key! g {:name "SomeKey" :data-type String})

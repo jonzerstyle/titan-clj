@@ -155,6 +155,12 @@
 
 ;;; TitanType
 
+(t/ann get-type [TitanGraph String -> (t/Option TitanType)])
+(defn get-type
+  "Gets type by name, returns nil if none found"
+  [^TitanGraph g name]
+  (.getType g name))
+
 (t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
 (defn get-types
   "Gets types"
@@ -202,7 +208,6 @@
 (t/ann ^:no-check add-property! [TitanVertex String Object -> TitanVertex])
 (defn add-property!
   [^TitanVertex v ^String name value]
-  (prn (str "---> prop: " value))
   (if (coll? value)
     (doseq [p value]
       (.addProperty v name p))
