@@ -95,9 +95,9 @@
 
 (deftest test-vertex
   (testing "Creating vertex"
-    (let [v (new-vertex! g {:name "vertexname" :some-key "something unique" :key2 2})]
-
-    (let [vertices (seq (.getVertices g))]
+    (make-key! g {:name "a-list" :data-type Long :list true})
+    (let [v (new-vertex! g {:name "vertexname" :some-key "something unique" :key2 2 :a-list '(1,2)})
+          vertices (seq (.getVertices g))]
       (is (= 1 (count vertices)))
       (let [v (first vertices)]
         (if-let [props (get-properties v :some-key)]
@@ -105,7 +105,12 @@
           (is false))
         (if-let [props (get-properties v :key2)]
           (is (= 2 (.getValue (first props))))
-          (is false)))))))
+          (is false))
+        (if-let [props (get-properties v :a-list)]
+          (do
+            (is (= 2 (count props)))
+            (is (= 1 (.getValue (first props))))
+            (is (= 2 (.getValue (second props))))))))))
 
 (deftest test-edge
   (testing "Creating edges"

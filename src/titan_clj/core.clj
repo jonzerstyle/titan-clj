@@ -198,10 +198,15 @@
 
 ;;; TitanVertex
 
-(t/ann add-property! [TitanVertex String Object -> TitanVertex])
+; TODO - fix doseq type checking
+(t/ann ^:no-check add-property! [TitanVertex String Object -> TitanVertex])
 (defn add-property!
   [^TitanVertex v ^String name value]
-  (.addProperty v name value)
+  (prn (str "---> prop: " value))
+  (if (coll? value)
+    (doseq [p value]
+      (.addProperty v name p))
+    (.addProperty v name value))
   v)
 
 ; TODO - improve type check when I can figure how to specify something like
