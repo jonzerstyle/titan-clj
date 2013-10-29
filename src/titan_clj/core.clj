@@ -71,6 +71,18 @@
   [^TitanGraph g]
   (.shutdown g))
 
+(t/ann commit! [TitanGraph -> nil])
+(defn commit!
+  "Commits current open transaction"
+  [^TitanGraph g]
+  (.commit g))
+
+(t/ann rollback! [TitanGraph -> nil])
+(defn rollback!
+  "Rolls back current open transaction"
+  [^TitanGraph g]
+  (.rollback g))
+
 ;;; TitanKey
 
 ; TODO - need to figure out what's wrong with type checking and the c-a macro
