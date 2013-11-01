@@ -189,26 +189,31 @@
 
 ;;; TitanType
 
+(t/ann transaction? (predicate TitanTransaction))
+(defn transaction?
+  [t]
+  (instance? TitanTransaction t))
+
 ; TODO - do we want semantic such that nil can be returned?
-(t/ann ^:no-check get-types [Class -> (t/Option (t/NonEmptySeq Any))])
+(t/ann get-types [Class -> (t/Option (t/NonEmptySeq Any))])
 (defn get-types
   "Gets types"
   [class]
   (if-let [g *graph*] ; to satisfy core.typed checker since it can be nil if not properly bound
-    (if (= (type g) TitanTransaction)
+    (if (transaction? g)
       (if-let [types (.getTypes ^TitanTransaction g class)]
         (seq types))
       (if-let [types (.getTypes ^TitanGraph g class)]
         (seq types)))
     (throw (RuntimeException. "Should only be called from 'with-graph'"))))
 
-(t/ann ^:no-check get-type [String -> (t/Option TitanType)])
+(t/ann get-type [String -> (t/Option TitanType)])
 (defn get-type
   "Gets type by name, returns nil if none found"
   [name]
   (get-types com.thinkaurelius.titan.core.TitanType); TODO - figure out why get-type doesn't work until we call get-types  
   (if-let [g *graph*] ; to satisfy core.typed checker since it can be nil if not properly bound
-    (if (= (type g) TitanTransaction)
+    (if (transaction? g)
       (.getType ^TitanTransaction g name)
       (.getType ^TitanGraph g name))
     (throw (RuntimeException. "Should only be called from 'with-graph'"))))
