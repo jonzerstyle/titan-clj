@@ -10,6 +10,7 @@
             TitanKey
             TitanLabel
             TitanProperty
+            TitanTransaction
             TitanType
             TitanVertex
             TypeMaker
@@ -83,6 +84,39 @@
   [^TitanGraph g]
   (.rollback g))
 
+(t/ann *graph* (t/Option (U TitanGraph TitanTransaction)))
+(def ^:dynamic *graph* nil)
+
+(defmacro with-graph [connection & body]
+  `(binding [*graph* ~connection]
+     (let [ret# (do ~@body)]
+       (shutdown! *graph*)
+       ret#)))
+
+(defmacro with-existing-graph [connection & body]
+  `(binding [*graph* ~connection]
+     (let [ret# (do ~@body)]
+       ret#)))
+
+(defmacro within-tx [& body]
+  `(try
+     (let [ret# (do ~@body)]
+       (.commit *graph*)
+       ret#)
+     (catch Exception e#
+       (.rollback *graph*) (throw e#))))
+
+; TODO - untested and not sure if implemented properly
+(defmacro within-threadbound-tx [& body]
+  `(let [tx# (.newTransaction *graph*)]
+     (binding [*graph* tx#]
+       (try
+         (let [ret# (do ~@body)]
+           (.commit tx#)
+           ret#)
+         (catch Exception e#
+           (.rollback tx#) (throw e#))))))
+
 ;;; TitanKey
 
 ; TODO - need to figure out what's wrong with type checking and the c-a macro
@@ -95,15 +129,15 @@
                    :list boolean
                    :indexed-standard Class
                    :indexed '[String Class]}))
-(t/ann ^:no-check make-key! [TitanGraph Key-Map -> TitanKey])
+(t/ann ^:no-check make-key! [Key-Map -> TitanKey])
 (t/non-nil-return com.thinkaurelius.titan.core.TitanGraph/makeKey :all)
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/make :all)
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/dataType :all)
 (t/non-nil-return com.thinkaurelius.titan.core.KeyMaker/unique :all)
 (defn make-key!
   "Creates a TitanKey"
-  [^TitanGraph g {:keys [name data-type indexed-standard indexed unique single list]}]
-  (let [^KeyMaker maker (-> (.makeKey g name)
+  [{:keys [name data-type indexed-standard indexed unique single list]}]
+  (let [^KeyMaker maker (-> (.makeKey *graph* name)
                             (.dataType data-type)
                             (if-run indexed-standard .indexed indexed-standard)
                             (if-run indexed .indexed (first indexed) (second indexed))
@@ -123,7 +157,7 @@
                    :signature '[TitanType]
                    :sort-key '[TitanType]
                    :edge-type (U (Value :directed) (Value :unidirected))}))
-(t/ann ^:no-check make-label! [TitanGraph Label-Map -> TitanLabel])
+(t/ann ^:no-check make-label! [Label-Map -> TitanLabel])
 (t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/manyToMany :all)
 (t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/manyToOne :all)
 (t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/oneToMany :all)
@@ -131,8 +165,8 @@
 (t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/signature :all)
 (t/non-nil-return com.thinkaurelius.titan.core.LabelMaker/sortKey :all)
 (defn make-label!
-  [^TitanGraph g {:keys [name edge-type many-to-many many-to-one one-to-many one-to-one signature sort-key]}]
-  (let [^LabelMaker maker (-> (.makeLabel g name)
+  [{:keys [name edge-type many-to-many many-to-one one-to-many one-to-one signature sort-key]}]
+  (let [^LabelMaker maker (-> (.makeLabel *graph* name)
                               (if-run many-to-many .manyToMany)
                               (if-run many-to-one .manyToOne (unique-converter many-to-one))
                               (if-run one-to-many .manyToOne (unique-converter one-to-many))
@@ -155,18 +189,29 @@
 
 ;;; TitanType
 
-(t/ann get-type [TitanGraph String -> (t/Option TitanType)])
-(defn get-type
-  "Gets type by name, returns nil if none found"
-  [^TitanGraph g name]
-  (.getType g name))
-
-(t/ann get-types [TitanGraph Class -> (t/Option (t/NonEmptySeq Any))])
+; TODO - do we want semantic such that nil can be returned?
+(t/ann ^:no-check get-types [Class -> (t/Option (t/NonEmptySeq Any))])
 (defn get-types
   "Gets types"
-  [^TitanGraph g class]
-  (if-let [types (.getTypes g class)]
-    (seq types)))
+  [class]
+  (if-let [g *graph*] ; to satisfy core.typed checker since it can be nil if not properly bound
+    (if (= (type g) TitanTransaction)
+      (if-let [types (.getTypes ^TitanTransaction g class)]
+        (seq types))
+      (if-let [types (.getTypes ^TitanGraph g class)]
+        (seq types)))
+    (throw (RuntimeException. "Should only be called from 'with-graph'"))))
+
+(t/ann ^:no-check get-type [String -> (t/Option TitanType)])
+(defn get-type
+  "Gets type by name, returns nil if none found"
+  [name]
+  (get-types com.thinkaurelius.titan.core.TitanType); TODO - figure out why get-type doesn't work until we call get-types  
+  (if-let [g *graph*] ; to satisfy core.typed checker since it can be nil if not properly bound
+    (if (= (type g) TitanTransaction)
+      (.getType ^TitanTransaction g name)
+      (.getType ^TitanGraph g name))
+    (throw (RuntimeException. "Should only be called from 'with-graph'"))))
 
 (t/ann get-name [TitanType -> String])
 (t/non-nil-return com.thinkaurelius.titan.core.TitanType/getName :all)
@@ -226,10 +271,10 @@
 ; TODO - need to figure out how to type check addVertex since we pass null but
 ; core.typed expects Object
 (t/def-alias Vertex-Map (t/Map t/Keyword Object))
-(t/ann ^:no-check new-vertex! [TitanGraph Vertex-Map -> TitanVertex])
+(t/ann ^:no-check new-vertex! [Vertex-Map -> TitanVertex])
 (defn new-vertex!
-  [^TitanGraph g properties]
-  (let [^TitanVertex v (.addVertex g nil)]
+  [properties]
+  (let [^TitanVertex v (.addVertex *graph* nil)]
     (doseq [prop properties]
       (add-property! v (clojure.core/name (first prop)) (second prop)))
     v))
@@ -237,17 +282,12 @@
 ;;; TitanEdge
 
 ; TODO - need to figure out how to type check since we pass null
-(t/ann  ^:no-check add-edge!
-  (Fn [TitanVertex TitanVertex String -> TitanEdge]
-      [TitanGraph TitanVertex TitanVertex String -> TitanEdge]))
+(t/ann  ^:no-check add-edge! [TitanVertex TitanVertex String -> TitanEdge])
 (t/non-nil-return com.thinkaurelius.titan.core.TitanVertex/addEdge :all)
 (defn add-edge!
-  ([^TitanVertex source ^TitanVertex dest ^String label]
-   (let [edge (.addEdge source label dest)]
-     edge))
-  ([^TitanGraph g ^TitanVertex source ^TitanVertex dest ^String label]
-   (let [edge (.addEdge g nil source dest label)]
-     edge)))
+  [^TitanVertex source ^TitanVertex dest ^String label]
+  (let [edge (.addEdge *graph* nil source dest label)]
+    edge))
 
 (t/ann get-edge-count [TitanVertex -> Long])
 (defn get-edge-count
