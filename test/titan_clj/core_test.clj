@@ -33,7 +33,7 @@
 (defn- fixture
   [f]
   (init-test-env)
-  (with-graph (connect! conf)
+  (with-graph (connect! (map-to-conf conf))
     (f))
   (clean-test-env))
 

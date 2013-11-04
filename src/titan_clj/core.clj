@@ -25,6 +25,8 @@
      (~func ~obj ~@args)
      (identity ~obj)))
 
+(t/def-alias Connection-Map (HMap :mandatory {:storage.backend String}
+                                  :optional  {:storage.directory String}))
 (t/ann ^:no-check map-to-conf [Connection-Map -> Configuration])
 (defn map-to-conf
   "Converts a clojure map to a apache Configuration"
@@ -55,16 +57,13 @@
 
 ;;; TitanGraph
 
-(t/def-alias Connection-Map (HMap :mandatory {:storage.backend String}
-                                  :optional  {:storage.directory String}))
-(t/ann connect! [Connection-Map -> TitanGraph])
+(t/ann connect! [Configuration -> TitanGraph])
 (defn connect!
   "Connects to a TitanGraph"
-  [params]
-  (let [^Configuration conf (map-to-conf params)]
-    (if-let [^TitanGraph g (TitanFactory/open conf)]
-      g
-      (throw (Exception. (str "Unable to open graph with params:" params))))))
+  [^Configuration conf]
+  (if-let [^TitanGraph g (TitanFactory/open conf)]
+    g
+    (throw (Exception. (str "Unable to open graph with conf:" conf)))))
 
 (t/ann shutdown! [TitanGraph -> nil])
 (defn shutdown!
