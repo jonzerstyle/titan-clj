@@ -52,7 +52,7 @@
   (case lock-type
     :lock (TypeMaker$UniquenessConsistency/LOCK)
     :no-lock (TypeMaker$UniquenessConsistency/NO_LOCK)
-    (throw (IllegalArgumentException. (str "Unsupported unique type: " lock-type)))))
+    (throw (IllegalArgumentException. (str "Unsupported unique consistency type: " lock-type " (should be :lock or :no-lock)")))))
 
 (t/ann direction-converter [(U (Value :in) (Value :out) (Value :both)) ->  Direction])
 (defn- direction-converter
