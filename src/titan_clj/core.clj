@@ -118,6 +118,11 @@
 
 ;;; TitanKey
 
+(t/ann ^:no-check create-indexes! [KeyMaker (Vector* String Class) -> KeyMaker])
+(defn- create-indexes!
+  [^KeyMaker obj indexes]
+  (reduce #(.indexed ^KeyMaker %1 (first %2) (second %2)) obj indexes))
+
 ; TODO - need to figure out what's wrong with type checking and the c-a macro
 ; TODO - add check for unique + indexed and throw error otherwise?
 (t/def-alias Key-Map
@@ -139,7 +144,7 @@
   (let [^KeyMaker maker (-> (.makeKey *graph* name)
                             (.dataType data-type)
                             (if-run indexed-standard .indexed indexed-standard)
-                            (if-run indexed .indexed (first indexed) (second indexed))
+                            (if-run indexed create-indexes! indexed)
                             (if-run unique .unique (unique-converter unique))
                             (if-run single .single (unique-converter single))
                             (if-run list .list))]

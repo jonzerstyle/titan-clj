@@ -69,9 +69,12 @@
     (let [key (make-key! {:name "Locking Single Key" :data-type String :single :lock :indexed-standard Vertex})]
       (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
       (is (.hasIndex key "standard" Vertex)))
-    (let [key (make-key! {:name "Locking Single Key Some Index" :data-type String :single :lock :indexed ["search" Vertex]})]
+    (let [key (make-key! {:name "Locking Single Key Some Index" :data-type String :single :lock :indexed [["search" Vertex]]})]
       (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
       (is (.hasIndex key "search" Vertex)))
+    (let [key (make-key! {:name "Key Some Index E/V" :data-type String :indexed [["search" Vertex] ["search" Edge]]})]
+      (is (.hasIndex key "search" Vertex))
+      (is (.hasIndex key "search" Edge)))
     (let [key (make-key! {:name "Locking Single Key List" :data-type String :list true})]
       ; TODO - not sure if there is a way to test this...
       )
