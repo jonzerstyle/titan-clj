@@ -43,6 +43,13 @@
   (testing "Checking typing"
     (t/check-ns 'titan-clj.core)))
 
+(deftest test-props-to-conf
+  (testing "Properties file to Configuration"
+    (let [p (prop-to-conf "test/resources/titan-cassandra-es.properties")]
+      (is (= "127.0.0.1" (.getString p "storage.hostname"))))
+    (let [p (prop-to-conf (java.io.File. "test/resources/titan-cassandra-es.properties"))]
+      (is (= "127.0.0.1" (.getString p "storage.hostname"))))))
+
 (deftest test-connect!
   (testing "Opening connection"
     (is (.isOpen *graph*))))

@@ -15,7 +15,8 @@
             TitanVertex
             TypeMaker
             TypeMaker$UniquenessConsistency]
-           [org.apache.commons.configuration Configuration BaseConfiguration])
+           [java.io File]
+           [org.apache.commons.configuration Configuration BaseConfiguration PropertiesConfiguration])
   (:refer-clojure :exclude [name]))
 
 ;;; Util stuff
@@ -29,12 +30,20 @@
                                   :optional  {:storage.directory String}))
 (t/ann ^:no-check map-to-conf [Connection-Map -> Configuration])
 (defn map-to-conf
-  "Converts a clojure map to a apache Configuration"
+  "Converts a clojure map to an apache Configuration"
   [params]
   (let [conf (BaseConfiguration.)]
     (doseq [[k v] params]
       (.addProperty conf (clojure.core/name k) (clojure.core/name v)))
     conf))
+
+(t/ann prop-to-conf [(U File String) -> Configuration])
+(defn prop-to-conf
+  "Converts a file or string to an apache Configuration"
+  [f]
+  (if (string? f)
+    (PropertiesConfiguration. ^String f)
+    (PropertiesConfiguration. ^File f)))
 
 (t/ann unique-converter [(U (Value :lock) (Value :no-lock)) -> (U TypeMaker$UniquenessConsistency)])
 (defn- unique-converter
