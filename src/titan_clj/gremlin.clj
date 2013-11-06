@@ -1,0 +1,45 @@
+(ns titan-clj.gremlin
+  (:require [clj-gremlin.core :as g]
+            [potemkin :as po])
+  (:gen-class))
+
+; Proxy class to the clj-gremlin library
+(po/import-fn g/V)
+(po/import-fn g/E)
+(po/import-fn g/v)
+(po/import-fn g/e)
+(po/import-fn g/props)
+(po/import-fn g/prop)
+(po/import-fn g/out)
+(po/import-fn g/outE)
+(po/import-fn g/in)
+(po/import-fn g/inE)
+(po/import-fn g/both)
+(po/import-fn g/bothE)
+(po/import-fn g/gather)
+(po/import-fn g/order)
+(po/import-fn g/select)
+(po/import-fn g/memo)
+(po/import-fn g/path)
+(po/import-fn g/at)
+(po/import-fn g/has)
+(po/import-fn g/has-not)
+(po/import-fn g/dedup)
+(po/import-fn g/group)
+(po/import-fn g/group-count)
+(po/import-fn g/aggregate)
+(po/import-fn g/table)
+(po/import-fn g/tree)
+(po/import-fn g/store)
+(po/import-fn g/looping)
+(po/import-fn g/_)
+(po/import-fn g/copy-split)
+(po/import-fn g/cap)
+(po/import-fn g/simple-path)
+(po/import-fn g/enable-path)
+(po/import-fn g/label)
+
+(defmacro gremlin
+  [start & body]
+  `(-> ~start _ ~@body))
+  

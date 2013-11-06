@@ -1,7 +1,7 @@
 (ns titan-clj.core-test
   (:require [clojure.test :refer :all]
             [titan-clj.core :refer :all]
-            
+            [titan-clj.gremlin :refer :all] 
             [clojure.java.io :as io]
             [clojure.core.typed :as t])
   (:import [org.apache.commons.io FileUtils]
@@ -86,7 +86,7 @@
       ; TODO - not sure if there is a way to test this...
       )
     (is (thrown-with-msg? RuntimeException
-                          #"Unsupported unique type: :locky"
+                          #"Unsupported unique consistency type: :locky"
                           (make-key! {:name "test exception" :data-type String :unique :locky})))))
 
 ; TODO - need to test many-/one-* options but this requires testing via actually
@@ -159,3 +159,29 @@
     (within-tx
        (make-key! {:name "SomeKey" :data-type String}))
     (is (get-type "SomeKey"))))
+
+(deftest test-queries
+  (testing "Queries"
+    (within-tx
+      (make-key! {:name "name" :data-type String})
+      (make-label! {:name "related-to"})
+      (let [v1 (new-vertex! {:name "v1"})
+            v2 (new-vertex! {:name "v2"})
+            v3 (new-vertex! {:name "v3"})]
+        (add-edge! v1 v2 "related-to")
+        (add-edge! v2 v3 "related-to")))
+    (let [vertices (seq (gremlin
+                          *graph*
+                          V))
+          v1 (first vertices)
+          v1-out-edges (seq (gremlin v1 outE))
+          v1-in-edges (seq (gremlin v1 inE))
+          v1-edges (seq (gremlin v1 bothE))
+          e1 (first v1-out-edges)]
+      (is (= 3 (count (seq vertices))))
+      (is (= {:name "v1"} (first (gremlin v1 props))))
+      (is (= "v1" (prop v1 "name")))
+      (is (= 1 (count (seq v1-out-edges))))
+      (is (= 0 (count (seq v1-in-edges))))
+      (is (= 1 (count (seq v1-edges))))
+      (is (= "related-to" (first (gremlin e1 label)))))))

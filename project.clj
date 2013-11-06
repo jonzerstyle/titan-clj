@@ -4,6 +4,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/core.typed "0.2.14"] 
+                 [org.clojure/core.typed "0.2.14"]
+                 [clj-gremlin "2.4.0-ALPHA"]
                  [com.thinkaurelius.titan/titan-all "0.4.0"]
-                 [commons-io/commons-io "2.4"]])
+                 [commons-io/commons-io "2.4"]
+                 [potemkin "0.3.4"]])

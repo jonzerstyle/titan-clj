@@ -5,6 +5,7 @@
             KeyMaker
             LabelMaker
             TitanEdge
+            TitanElement
             TitanFactory
             TitanGraph
             TitanKey
@@ -323,3 +324,16 @@
   ([^TitanVertex v direction ^String label & labels]
    (let [label-array  (into-array String (concat (list label) labels))]
      (seq (.getEdges v (direction-converter direction) label-array)))))
+
+;(t/ann key? (predicate TitanKey))
+;(defn key?
+;  [t]
+;  (instance? TitanKey t))
+;
+;(t/ann prop [TitanElement (U String TitanKey t/Keyword) -> Any])
+;(defn prop
+;  ([^TitanElement e])
+;  ([^TitanElement e prop]
+;   (if (key? prop)
+;     (.getProperty e ^TitanKey prop)
+;     (.getProperty e ^String (clojure.core/name prop)))))
