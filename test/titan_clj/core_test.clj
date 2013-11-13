@@ -71,9 +71,9 @@
         (is (property-key? type))
         (is (not (edge-label? type)))
         (is (= String (get-data-type type)))))
-    (let [key (make-key! {:name "Locking Unique Key" :data-type String :unique :lock :indexed-standard Vertex})]
+    (let [key (make-key! {:name "Locking Unique Key" :data-type String :unique :lock :indexed-standard [Vertex]})]
       (is (.isUnique key com.tinkerpop.blueprints.Direction/IN)))
-    (let [key (make-key! {:name "Locking Single Key" :data-type String :single :lock :indexed-standard Vertex})]
+    (let [key (make-key! {:name "Locking Single Key" :data-type String :single :lock :indexed-standard [Vertex]})]
       (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
       (is (.hasIndex key "standard" Vertex)))
     (let [key (make-key! {:name "Locking Single Key Some Index" :data-type String :single :lock :indexed [["search" Vertex]]})]
