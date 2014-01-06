@@ -38,8 +38,13 @@
 (po/import-fn g/simple-path)
 (po/import-fn g/enable-path)
 (po/import-fn g/label)
+(po/import-fn g/query)
+(po/import-fn g/interval)
+(po/import-fn g/limit)
+(po/import-fn g/vertices)
+(po/import-fn g/edges)
 
 (defmacro gremlin
   [start & body]
   `(-> ~start _ ~@body))
-  
+
