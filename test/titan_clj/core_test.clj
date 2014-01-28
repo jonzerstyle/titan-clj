@@ -6,7 +6,8 @@
             [clojure.core.typed :as t])
   (:import [org.apache.commons.io FileUtils]
            [com.tinkerpop.blueprints Vertex Edge]
-           [com.thinkaurelius.titan.core TitanKey TitanLabel]))
+           [com.thinkaurelius.titan.core TitanKey TitanLabel])
+  (:refer-clojure :exclude [key]))
 
 (def titan-tmp-dir "/tmp/titan-clj-test")
 
@@ -82,8 +83,16 @@
     (let [key (make-key! {:name "Key Some Index E/V" :data-type String :indexed [["search" Vertex] ["search" Edge]]})]
       (is (.hasIndex key "search" Vertex))
       (is (.hasIndex key "search" Edge)))
-    (let [key (make-key! {:name "Locking Single Key List" :data-type String :list true})]
+    (let [key (make-key! {:name "Key List" :data-type String :list true})]
       ; TODO - not sure if there is a way to test this...
+      )
+    (let [key (make-key! {:name "Locking Single Key List" :data-type String :single :lock :list true})]
+      ; TODO - not sure if there is a way to test this...
+      (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
+      )
+    (let [key (make-key! {:name "Non-locking Single Key List" :data-type String :single :no-lock :list true})]
+      ; TODO - not sure if there is a way to test this...
+      (is (.isUnique key com.tinkerpop.blueprints.Direction/OUT))
       )
     (is (thrown-with-msg? RuntimeException
                           #"Unsupported unique consistency type: :locky"

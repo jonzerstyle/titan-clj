@@ -18,7 +18,7 @@
             TypeMaker$UniquenessConsistency]
            [java.io File]
            [org.apache.commons.configuration Configuration BaseConfiguration PropertiesConfiguration])
-  (:refer-clojure :exclude [name]))
+  (:refer-clojure :exclude [name list]))
 
 ;;; Util stuff
 (defmacro if-run 
@@ -161,8 +161,14 @@
                             (if-run indexed-standard create-standard-indexes! indexed-standard)
                             (if-run indexed create-indexes! indexed)
                             (if-run unique .unique (unique-converter unique))
-                            (if-run single .single (unique-converter single))
-                            (if-run list .list))]
+                            ; TODO - reordered this since it appears to affect
+                            ; the creation of keys.  Ordering should matter but
+                            ; posted to mailing list in the meantime:
+                            ; https://groups.google.com/forum/#!topic/aureliusgraphs/uVCJCdccGh0
+                            ;(if-run single .single (unique-converter single))
+                            ;(if-run list .list))]
+                            (if-run list .list)
+                            (if-run single .single (unique-converter single)))]
     (.make maker)))
 
 ;;; TitanLabel
@@ -327,7 +333,7 @@
   ([^TitanVertex v]
    (seq (.getEdges v)))
   ([^TitanVertex v direction ^String label & labels]
-   (let [label-array  (into-array String (concat (list label) labels))]
+   (let [label-array  (into-array String (concat (clojure.core/list label) labels))]
      (seq (.getEdges v (direction-converter direction) label-array)))))
 
 ;(t/ann key? (predicate TitanKey))
