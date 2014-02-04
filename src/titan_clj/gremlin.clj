@@ -43,6 +43,7 @@
 (po/import-fn g/limit)
 (po/import-fn g/vertices)
 (po/import-fn g/edges)
+(po/import-fn g/remove-elements)
 
 (defmacro gremlin
   [start & body]

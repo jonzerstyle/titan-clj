@@ -126,6 +126,10 @@
          (catch Exception e#
            (.rollback tx#) (throw e#))))))
 
+(defmacro gremlin-g
+  [& body]
+  `(-> *graph* ~@body))
+
 ;;; TitanKey
 
 (t/ann ^:no-check create-indexes! [KeyMaker (Vector* String Class) -> KeyMaker])
