@@ -92,7 +92,6 @@
         ; TODO - not sure if there is a way to test this...
         (.isUnique key com.tinkerpop.blueprints.Direction/OUT) => true
         )
-      ;cannot resolve with midje why? ddd
       (ms/fact "test exception"
        (make-key! {:name "test exception" :data-type String :unique :locky})
         => (ms/throws #"Unsupported unique consistency type: :locky")))
