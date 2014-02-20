@@ -96,7 +96,7 @@
        (make-key! {:name "test exception" :data-type String :unique :locky})
         => (ms/throws #"Unsupported unique consistency type: :locky")))
     ; TODO - need to test many-/one-* options but this requires testing via actually
-    ; adding vertices/edges
+    ; adding vertices/edges...
     (ms/fact "Creating labels"
       (make-label! {:name "label1"})
       (let [key-types (get-types TitanKey)
