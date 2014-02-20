@@ -93,10 +93,9 @@
         (.isUnique key com.tinkerpop.blueprints.Direction/OUT) => true
         )
       ;cannot resolve with midje why? ddd
-      ;(thrown-with-msg? RuntimeException
-      ;                        #"Unsupported unique consistency type: :locky"
-      ;                        (make-key! {:name "test exception" :data-type String :unique :locky})) => true
-       )
+      (ms/fact "test exception"
+       (make-key! {:name "test exception" :data-type String :unique :locky})
+        => (ms/throws #"Unsupported unique consistency type: :locky")))
     ; TODO - need to test many-/one-* options but this requires testing via actually
     ; adding vertices/edges
     (ms/fact "Creating labels"
