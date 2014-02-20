@@ -8,10 +8,14 @@
                  [clj-gremlin "2.4.0-ALPHA-3-SNAPSHOT"]
                  [com.thinkaurelius.titan/titan-all "0.4.0"]
                  [commons-io/commons-io "2.4"]
-                 [potemkin "0.3.4"]]
+                 [potemkin "0.3.4"]
+                 [midje "1.6.0"]
+                 ;[org.clojure/tools.trace "0.7.6"]
+                 ]
   
   :repositories [["bd-snapshots" {:url "s3p://bd-deps/snapshots/"
                                   :username ~(System/getenv "LEIN_USERNAME")
                                   :passphrase ~(System/getenv "LEIN_PASSPHRASE")}]]
   
-  :plugins [[s3-wagon-private "1.1.2"]])
+  :plugins [[s3-wagon-private "1.1.2"]
+            [lein-midje "3.1.3"]])
