@@ -4,6 +4,7 @@
             [clojure.java.io :as io]
             [clojure.core.typed :as t]
             [midje.sweet :as ms]
+            ;[clojure.tools.trace :as tools_trace]
             )
   (:import [org.apache.commons.io FileUtils]
            [com.tinkerpop.blueprints Vertex Edge]
@@ -52,20 +53,23 @@
        (.getString p "storage.hostname") => "127.0.0.1")) 
     (ms/fact "Opening connection"
       (.isOpen *graph*) => true)
-    ;this one fails - need to figure out how to compare to type
-    ;  the last result is TitanKeyVertex - ddd
     (ms/fact "Testing types"
       (not (get-type "Something")) => true
       (make-key! {:name "Something" :data-type String})
+      ;THIS FAILS
+      ;  need to figure out how to compare to type
+      ;  the last result is TitanKeyVertex
       (get-type "Something") => true)
     (ms/fact "Creating keys"
       (make-key! {:name "SomeKey" :data-type String})
+      ;THIS FAILS
+      ;  need to figure out how to compare to type
+      ;  the last result is TitanKeyVertex
       (get-type "SomeKey") => true
       (let [types (get-types com.thinkaurelius.titan.core.TitanType)]
         (count types) => 1
         (let [type (first types)]
-          ; Issue here is strings match but two things are not equal
-          (get-name type) => "Somekey"
+          (get-name type) => "SomeKey"
           (property-key? type) => true
           (not (edge-label? type)) => true
           (= String (get-data-type type)) = true))
@@ -157,6 +161,9 @@
       (not (get-type "SomeKey")) => true
       (within-tx
          (make-key! {:name "SomeKey" :data-type String}))
+      ;THIS FAILS
+      ;  need to figure out how to compare to type
+      ;  the last result is TitanKeyVertex
       (get-type "SomeKey") => true)
     (ms/fact "Queries"
       (within-tx

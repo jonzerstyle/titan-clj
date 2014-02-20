@@ -9,7 +9,9 @@
                  [com.thinkaurelius.titan/titan-all "0.4.0"]
                  [commons-io/commons-io "2.4"]
                  [potemkin "0.3.4"]
-                 [midje "1.6.0"]]
+                 [midje "1.6.0"]
+                 ;[org.clojure/tools.trace "0.7.6"]
+                 ]
   
   :repositories [["bd-snapshots" {:url "s3p://bd-deps/snapshots/"
                                   :username ~(System/getenv "LEIN_USERNAME")
