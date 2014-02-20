@@ -1,4 +1,4 @@
-(defproject titan-clj "0.4.0-ALPHA-3-SNAPSHOT"
+(defproject titan-clj "0.4.0-ALPHA-4-SNAPSHOT"
   :description "Simple library for interacting with Titan DB"
   :url "http://www.github.com/andrew-nguyen/titan-clj"
   :license {:name "Eclipse Public License"

@@ -293,6 +293,12 @@
     (.addProperty v name value))
   v)
 
+(defn set-property!
+  [^TitanElement e ^String name value]
+  (if (coll? value)
+    (.setProperty e name (java.util.Vector. value))
+    (.setProperty e name value)))
+
 ; TODO - improve type check when I can figure how to specify something like
 ; generics
 (t/ann get-properties [TitanVertex t/Keyword -> (t/Option (t/NonEmptySeq Any))])
@@ -319,8 +325,10 @@
 (t/ann  ^:no-check add-edge! [TitanVertex TitanVertex String -> TitanEdge])
 (t/non-nil-return com.thinkaurelius.titan.core.TitanVertex/addEdge :all)
 (defn add-edge!
-  [^TitanVertex source ^TitanVertex dest ^String label]
+  [^TitanVertex source ^TitanVertex dest ^String label & [props]]
   (let [edge (.addEdge *graph* nil source dest label)]
+    (doseq [prop props]
+      (set-property! edge (clojure.core/name (first prop)) (second prop)))
     edge))
 
 (t/ann get-edge-count [TitanVertex -> Long])
