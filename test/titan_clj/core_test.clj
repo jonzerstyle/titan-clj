@@ -4,6 +4,7 @@
             [clojure.java.io :as io]
             [clojure.core.typed :as t]
             [midje.sweet :as ms]
+            [clojure.repl :as clj_repl]
             ;[clojure.tools.trace :as tools_trace]
             )
   (:import [org.apache.commons.io FileUtils]
@@ -25,6 +26,8 @@
 (defn- clean-test-env
   []
   (delete-dir titan-tmp-dir))
+
+(def titan_vertex_key_alias com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex)
 
 (def conf {:storage.backend :berkeleyje
            :storage.directory titan-tmp-dir
@@ -56,16 +59,10 @@
     (ms/fact "Testing types"
       (not (get-type "Something")) => true
       (make-key! {:name "Something" :data-type String})
-      ;THIS FAILS
-      ;  need to figure out how to compare to type
-      ;  the last result is TitanKeyVertex
-      (get-type "Something") => true)
+      (type (get-type "Something")) => titan_vertex_key_alias)
     (ms/fact "Creating keys"
       (make-key! {:name "SomeKey" :data-type String})
-      ;THIS FAILS
-      ;  need to figure out how to compare to type
-      ;  the last result is TitanKeyVertex
-      (get-type "SomeKey") => true
+      (type (get-type "SomeKey")) => titan_vertex_key_alias
       (let [types (get-types com.thinkaurelius.titan.core.TitanType)]
         (count types) => 1
         (let [type (first types)]
@@ -161,10 +158,7 @@
       (not (get-type "SomeKey")) => true
       (within-tx
          (make-key! {:name "SomeKey" :data-type String}))
-      ;THIS FAILS
-      ;  need to figure out how to compare to type
-      ;  the last result is TitanKeyVertex
-      (get-type "SomeKey") => true)
+      (type (get-type "SomeKey")) => titan_vertex_key_alias)
     (ms/fact "Queries"
       (within-tx
         (make-key! {:name "name" :data-type String})
