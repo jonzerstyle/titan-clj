@@ -293,6 +293,8 @@
     (.addProperty v name value))
   v)
 
+; TODO - fix doseq type checking
+(t/ann ^:no-check set-property! [TitanVertex String Object -> TitanVertex])
 (defn set-property!
   [^TitanElement e ^String name value]
   (if (coll? value)
